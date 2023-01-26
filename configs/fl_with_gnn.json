@@ -1,0 +1,39 @@
+{
+    "train": {
+        "data": "dataset/data/",
+        "split": "dataset/split.npz",
+        "batch_size": 16,
+        "epochs": 5,
+        "gpu": "True",
+        "model_file_name": "model_weights/cbis_a1_b1.model",
+        "lr": 1e-5,
+        "checkpoint": "model_weights/cbis_a1_b1.model",
+        "savepath": "model_weights/"
+    },
+    "inference": {
+        "data": "dataset/data/",
+        "split": "dataset/split.npz",
+        "batch_size": 16,
+        "epochs": 5,
+        "gpu": "True",
+        "model_file_name": "model_weights/cbis_a1_b1.model",
+        "lr": 1e-5,
+        "checkpoint": "model_weights/cbis_a1_b1.model",
+        "savepath": "model_weights/"
+    },
+    "export": {
+        "checkpoint": "model_weights/cbis_a1_b1.model",
+        "input_shape": [
+            1,
+            1,
+            1024,
+            1024
+        ],
+        "model_name_onnx": "cbis_a1_b1.onnx",
+        "model_name": "cbis_a1_b1",
+        "alpha": 1,
+        "beta": 1,
+        "phi": 1,
+        "phase": 1
+    }
+}
