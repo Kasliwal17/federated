@@ -13,9 +13,9 @@ def download_checkpoint(gnn=True):
     if not os.path.exists('model_weights'):
         os.makedirs('model_weights')
     url1 = config['fl_with_gnn']['url_model']
-    path1 = config['stage1']['dest_path_model']
-    url2 = config['stage2']['url_model']
-    path2 = config['stage2']['dest_path_model']
+    path1 = config['fl_with_gnn']['dest_path_model']
+    url2 = config['fl_without_gnn']['url_model']
+    path2 = config['fl_without_gnn']['dest_path_model']
     download_and_extract(path=path1, url=url1,
                          expath='model_weights/')
     download_and_extract(path=path2, url=url2,
