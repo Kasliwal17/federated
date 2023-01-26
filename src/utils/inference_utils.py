@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from torch_geometric.data import Data as Data_GNN
 from torch_geometric.data import DataLoader as DataLoader_GNN
 import numpy as np
-from metric import compute_performance
+from .metric import compute_performance
 
 # Validation code
 ################# Inference ####################

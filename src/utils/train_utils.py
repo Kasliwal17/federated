@@ -1,17 +1,17 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from model import First_Conv, Fully_Connected_Layer, GNN_Network
-from dataloader import construct_dataset
-from loss import Custom_Loss
+from .model import First_Conv, Fully_Connected_Layer, GNN_Network
+from .dataloader import construct_dataset
+from .loss import Custom_Loss
 from torch.utils.data import DataLoader
 from torchvision import models
 from sklearn.metrics import cohen_kappa_score
 import copy
 from torch_geometric.data import Data as Data_GNN
 from torch_geometric.data import DataLoader as DataLoader_GNN
-from inference_utils import inference
-from transformations import train_transform, test_transform
+from .inference_utils import inference
+from .transformations import train_transform, test_transform
 
 def compute_edge_attr(A):
     edge=[]

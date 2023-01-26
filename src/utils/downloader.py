@@ -1,4 +1,4 @@
-from get_config import get_config
+from .get_config import get_config
 import os
 import zipfile
 import wget

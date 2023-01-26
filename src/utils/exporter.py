@@ -1,6 +1,5 @@
 import torch
 import os
-from .model import load_checkpoint
 from .train_utils import instantiate_architecture
 
 class Exporter:
@@ -32,6 +31,7 @@ class Exporter:
             self.model3.load_state_dict(glbl_fc_wt)
             self.model4.load_state_dict(sit0_gnn_wt)
         else:
+            self.model1.load_state_dict()
             
 
     def export_model_ir(self):
