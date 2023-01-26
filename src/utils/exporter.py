@@ -18,7 +18,21 @@ class Exporter:
         self.model3.eval()
         if self.gnn:
             self.model4.eval()
-        load_checkpoint(self.model, self.checkpoint)
+            checkpoint=torch.load(self.checkpoint)
+            glbl_cnv_wt=checkpoint['cnv_lyr_state_dict']
+            glbl_backbone_wt=checkpoint['backbone_model_state_dict']
+            glbl_fc_wt=checkpoint['fc_layers_state_dict']
+            sit0_gnn_wt=checkpoint['sit0_gnn_model']
+            # sit1_gnn_wt=checkpoint['sit1_gnn_model']
+            # sit2_gnn_wt=checkpoint['sit2_gnn_model']
+            # sit3_gnn_wt=checkpoint['sit3_gnn_model']
+            # sit4_gnn_wt=checkpoint['sit4_gnn_model']
+            self.model1.load_state_dict(glbl_cnv_wt)
+            self.model2.load_state_dict(glbl_backbone_wt)
+            self.model3.load_state_dict(glbl_fc_wt)
+            self.model4.load_state_dict(sit0_gnn_wt)
+        else:
+            
 
     def export_model_ir(self):
         input_model = os.path.join(
