@@ -4,9 +4,14 @@ from torch_geometric.data import Data as Data_GNN
 from torch_geometric.data import DataLoader as DataLoader_GNN
 import numpy as np
 from .metric import compute_performance
+from .model import Infer_model
+from .loss import Custom_Loss
+from .dataloader import construct_dataset
+from torch.utils.data import DataLoader
+from .transformations import test_transform
 
 # Validation code
-################# Inference ####################
+################# To be used for inference during training ####################
 def inference(cnv_lyr, backbone_model, fc_layers, gnn_model, val_loader, criterion, device,edge_index=None, edge_attr=None):
     
     tot_loss=0
@@ -89,3 +94,53 @@ def inference(cnv_lyr, backbone_model, fc_layers, gnn_model, val_loader, criteri
         gnn_model.train()
     
     return metric
+
+#####To be used for inference##########
+def inference_model(config):
+    
+    tot_loss=0
+    tot_auc=0
+    
+    gt_lst=[]
+    pred_lst=[]
+    model = Infer_model(config['backbone'],config['gnn'])
+    model.eval()
+    criterion = Custom_Loss(-999)
+    data_test=construct_dataset(config['dataset'], config['split_npz'], -999, test_transform, tn_vl_idx=2)
+    test_loader=DataLoader(data_test, config['batch_size'], shuffle=False, num_workers=1, pin_memory=False)
+    with torch.no_grad():
+        for count, sample in enumerate(test_loader):
+            
+            img=sample['img']
+            gt=sample['gt']
+            prd_final = model(img)
+            ########Forward Pass #############################################
+            loss=criterion(prd_final, gt)
+            
+            # Apply the sigmoid
+            prd_final=F.sigmoid(prd_final)
+            
+            gt_lst.append(gt.cpu().numpy())
+            pred_lst.append(prd_final.cpu().numpy())
+            
+            
+            tot_loss=tot_loss+loss.cpu().numpy()
+           
+            del loss, gt, prd_final, prd
+            
+    
+    gt_lst=np.concatenate(gt_lst, axis=1)
+    pred_lst=np.concatenate(pred_lst, axis=1)
+    
+    gt_lst=np.transpose(gt_lst)
+    pred_lst=np.transpose(pred_lst)
+    
+    # Now compute and display the average
+    count=count+1 # since it began from 0
+    avg_loss=tot_loss/count
+    
+    sens_lst, spec_lst, acc_lst, auc_lst=compute_performance(pred_lst, gt_lst)
+    avg_auc=np.mean(auc_lst)
+    
+    
+    print ("\n Test_Loss:  {:.4f},  Avg. AUC: {:.4f}".format(avg_loss, avg_auc))

@@ -4,7 +4,7 @@ from utils.get_config import get_config
 
 def export(args):
     export_config = get_config(action='export', gnn=args.gnn)
-    exporter = Exporter(export_config, args.optimised)
+    exporter = Exporter(export_config)
 
     if args.onnx:
         exporter.export_model_onnx()

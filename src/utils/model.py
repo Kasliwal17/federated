@@ -2,7 +2,11 @@ import torch.nn as nn
 import torch
 from torch_geometric.nn import NNConv
 from torch_geometric.nn import BatchNorm as GNN_BatchNorm
+from .misc import compute_adjacency_matrix
+from torch_geometric.data import DataLoader as DataLoader_GNN
+from torch_geometric.data import Data as Data_GNN
 import torch.nn.functional as F
+from torchvision import models
 # Define Architecture
 ''' Instead of creating an instance of the models within the constructor, 
  We will pass the initial layer for 1 to 3 channel, the backbone model 
@@ -158,3 +162,59 @@ class GNN_Network(nn.Module):
         out=self.my_gcn[cnt](x, edge_index, edge_attr) # num_nodes by 1
         #out=F.sigmoid(out)
         return out
+
+########Combined model for inference and export###########
+class Infer_model(nn.Module):
+    def __init__(self, backbone, gnn=True):
+        super(Infer_model, self).__init__()
+        self.gnn = gnn
+        if backbone=='densenet':
+            inp_dim=1024
+            backbone_model=models.densenet121(pretrained=True)
+            backbone_model.classifier=nn.Identity()
+        elif backbone=='resnet':
+            inp_dim=512
+            backbone_model=models.resnet18(pretrained=True)
+            backbone_model.fc=nn.Identity()
+    
+        elif backbone=='xception':
+            inp_dim=2048
+            backbone_model=xception.xception(pretrained=True)
+            backbone_model.fc=nn.Identity()
+    
+
+        cnv_lyr=First_Conv()
+        fc_layers=Fully_Connected_Layer(inp_dim, ftr_dim=512)
+        if gnn==True:
+            gnn_model=GNN_Network(in_chnls=512, base_chnls=1, grwth_rate=1, depth=1, aggr_md='mean', ftr_dim=4)
+        self.cnv_lyr=cnv_lyr
+        self.backbone_model=backbone_model
+        self.fc_layers = fc_layers
+        if gnn==True:
+            self.gnn_model = gnn_model
+        self.DataLoader_GNN = DataLoader_GNN
+        self.Data_GNN = Data_GNN
+        self.edge_index, self.edge_attr= compute_adjacency_matrix('confusion_matrix', -999, '/storage/aneesh/split.npz')
+
+
+    def forward(self, x):
+        x = x.unsqueeze(0)
+        img_3chnl=self.cnv_lyr(x)
+        gap_ftr=self.backbone_model(img_3chnl)
+        ftr_lst, prd=self.fc_layers(gap_ftr)
+        if self.gnn==True:
+            ftr_lst=torch.cat(ftr_lst, dim=1)
+        
+            data_lst=[]
+            for k in range(0, ftr_lst.shape[0]):
+                 data_lst.append(self.Data_GNN(x=ftr_lst[k,:,:], edge_index=self.edge_index, edge_attr=self.edge_attr, y=torch.unsqueeze(gt[k,:], dim=1))) 
+                
+            loader = self.DataLoader_GNN(data_lst, batch_size=ftr_lst.shape[0])
+            loader=next(iter(loader))
+            gt=loader.y
+            prd_final=self.gnn_model(loader)    
+        else:
+            prd_final=prd
+        return prd_final
+    
+    
