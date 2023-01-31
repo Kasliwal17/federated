@@ -165,7 +165,7 @@ class GNN_Network(nn.Module):
 
 ########Combined model for inference and export###########
 class Infer_model(nn.Module):
-    def __init__(self, backbone, gnn=True):
+    def __init__(self, backbone,split_path, gnn=True):
         super(Infer_model, self).__init__()
         self.gnn = gnn
         if backbone=='densenet':
@@ -194,15 +194,15 @@ class Infer_model(nn.Module):
             self.gnn_model = gnn_model
         self.DataLoader_GNN = DataLoader_GNN
         self.Data_GNN = Data_GNN
-        self.edge_index, self.edge_attr= compute_adjacency_matrix('confusion_matrix', -999, '/storage/aneesh/split.npz')
+        self.edge_index, self.edge_attr= compute_adjacency_matrix('confusion_matrix', -999, split_path)
 
 
-    def forward(self, x):
-        x = x.unsqueeze(0)
+    def forward(self, x, gt):
         img_3chnl=self.cnv_lyr(x)
         gap_ftr=self.backbone_model(img_3chnl)
         ftr_lst, prd=self.fc_layers(gap_ftr)
         if self.gnn==True:
+            # ftr_lst = ftr_lst.unsqueeze(0)
             ftr_lst=torch.cat(ftr_lst, dim=1)
         
             data_lst=[]
@@ -215,6 +215,6 @@ class Infer_model(nn.Module):
             prd_final=self.gnn_model(loader)    
         else:
             prd_final=prd
-        return prd_final
+        return prd_final,gt
     
     
