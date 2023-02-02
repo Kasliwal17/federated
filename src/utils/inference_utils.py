@@ -141,7 +141,7 @@ def load_inference_model(config, run_type):
         model = ie.load_network(network=model_temp, device_name='CPU')
 
     return model
-def inference_model(model, config, run_type):
+def validate_model(model, config, run_type):
     # GPU transfer - Only pytorch models needs to be transfered.
     if run_type == 'pytorch':
         if torch.cuda.is_available() and config['gpu'] == 'True':
@@ -164,7 +164,7 @@ def inference_model(model, config, run_type):
                 img = img.cuda()
                 gt = gt.cuda()
             if run_type == 'pytorch':
-                prd_final, gt = model(img)  # forward through encoder
+                prd_final= model(img)  # forward through encoder
                 prd_final = prd_final.cpu().numpy()
                 gt = gt.cpu().numpy()
             elif run_type == 'onnx':
@@ -174,7 +174,12 @@ def inference_model(model, config, run_type):
                 prd_final = np.array(prd_final)
                 prd_final = np.squeeze(prd_final,axis=0)
                 prd_final = to_tensor(np.squeeze(prd_final,axis=0)).permute(1,2,0).unsqueeze(0)
-            ########Forward Pass #############################################
+            else:
+                to_tensor = transforms.ToTensor()
+                prd_final = model.infer(inputs={'input': img})['output']
+                prd_final = np.array(prd_final)
+                prd_final = np.squeeze(prd_final,axis=0)
+                prd_final = to_tensor(np.squeeze(prd_final,axis=0)).unsqueeze(0)
             loss=criterion(prd_final, gt)
             
             # Apply the sigmoid
@@ -204,3 +209,7 @@ def inference_model(model, config, run_type):
     
     
     print ("\n Test_Loss:  {:.4f},  Avg. AUC: {:.4f}".format(avg_loss, avg_auc))
+
+def inference_model(config, run_type):
+    model = load_inference_model(config, run_type)
+    validate_model(model, config, run_type)
