@@ -197,7 +197,7 @@ class Infer_model(nn.Module):
         self.edge_index, self.edge_attr= compute_adjacency_matrix('confusion_matrix', -999, split_path)
 
 
-    def forward(self, x, gt):
+    def forward(self, x):
         img_3chnl=self.cnv_lyr(x)
         gap_ftr=self.backbone_model(img_3chnl)
         ftr_lst, prd=self.fc_layers(gap_ftr)
@@ -207,14 +207,13 @@ class Infer_model(nn.Module):
         
             data_lst=[]
             for k in range(0, ftr_lst.shape[0]):
-                 data_lst.append(self.Data_GNN(x=ftr_lst[k,:,:], edge_index=self.edge_index, edge_attr=self.edge_attr, y=torch.unsqueeze(gt[k,:], dim=1))) 
+                 data_lst.append(self.Data_GNN(x=ftr_lst[k,:,:], edge_index=self.edge_index, edge_attr=self.edge_attr)) 
                 
             loader = self.DataLoader_GNN(data_lst, batch_size=ftr_lst.shape[0])
             loader=next(iter(loader))
-            gt=loader.y
             prd_final=self.gnn_model(loader)    
         else:
             prd_final=prd
-        return prd_final,gt
+        return prd_final
     
     

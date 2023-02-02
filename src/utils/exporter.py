@@ -35,13 +35,11 @@ class Exporter:
         input_model = os.path.join(
             os.path.split(self.checkpoint)[0], self.config.get('model_name_onnx'))
         input_shape = self.config.get('input_shape')
-        input_shape1 = input_shape[0]
-        input_shape2 = input_shape[1]
         output_dir = os.path.split(self.checkpoint)[0]
         export_command = f"""mo \
         --framework onnx \
         --input_model {input_model} \
-        --input_shape "{input_shape1,input_shape2}" \
+        --input_shape "{input_shape}" \
         --output_dir {output_dir}"""
 
         if self.config.get('verbose_export'):
@@ -58,9 +56,7 @@ class Exporter:
 
         torch.onnx.export(self.model, args=(dummy_input1, dummy_input2), f=res_path,
                           opset_version=11, do_constant_folding=True,
-                          input_names=['input_1','input_2'], output_names=['output_1','output_2'],
-                          dynamic_axes={'input_1': {0: 'batch_size'},
-                                        'input_2': {0: 'batch_size'},
-                                        'output_2': {0: 'batch_size'},
-                                        'output_2': {0: 'batch_size'}},
+                          input_names=['input'], output_names=['output_1'],
+                          dynamic_axes={'input': {0: 'batch_size'},
+                                        'output': {0: 'batch_size'}},
                           verbose=False)

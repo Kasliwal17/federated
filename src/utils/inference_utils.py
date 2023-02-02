@@ -164,12 +164,16 @@ def inference_model(model, config, run_type):
                 img = img.cuda()
                 gt = gt.cuda()
             if run_type == 'pytorch':
-                prd_final, gt = model(img,gt)  # forward through encoder
+                prd_final, gt = model(img)  # forward through encoder
                 prd_final = prd_final.cpu().numpy()
                 gt = gt.cpu().numpy()
             elif run_type == 'onnx':
-                resize_tensor = transforms.Resize([1024,1024])
-            prd_final ,gt= model(img,gt)
+                ort_inputs = {model.get_inputs()[0].name: to_numpy(img)}
+                prd_final = model.run(None, ort_inputs)
+                to_tensor = transforms.ToTensor()
+                prd_final = np.array(prd_final)
+                prd_final = np.squeeze(prd_final,axis=0)
+                prd_final = to_tensor(np.squeeze(prd_final,axis=0)).permute(1,2,0).unsqueeze(0)
             ########Forward Pass #############################################
             loss=criterion(prd_final, gt)
             

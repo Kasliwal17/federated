@@ -23,12 +23,12 @@
     },
     "export": {
         "checkpoint": "model_weights/cbis_a1_b1.model",
-        "input_shape": [[
+        "input_shape": [
             1,
             1,
             320,
             320
-        ],[1,14]],
+        ],
         "model_name_onnx": "cbis_a1_b1.onnx",
         "model_name": "cbis_a1_b1",
     }
