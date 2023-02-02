@@ -23,17 +23,13 @@
     },
     "export": {
         "checkpoint": "model_weights/cbis_a1_b1.model",
-        "input_shape": [
+        "input_shape": [[
             1,
             1,
-            1024,
-            1024
-        ],
+            320,
+            320
+        ],[1,14]],
         "model_name_onnx": "cbis_a1_b1.onnx",
         "model_name": "cbis_a1_b1",
-        "alpha": 1,
-        "beta": 1,
-        "phi": 1,
-        "phase": 1
     }
 }

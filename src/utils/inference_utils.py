@@ -9,6 +9,14 @@ from .loss import Custom_Loss
 from .dataloader import construct_dataset
 from torch.utils.data import DataLoader
 from .transformations import test_transform
+from openvino.inference_engine import IECore
+import torchvision.transforms as transforms
+from .misc import aggregate_local_weights
+import os
+
+
+def to_numpy(tensor):
+    return tensor.detach().cpu().numpy() if tensor.requires_grad else tensor.cpu().numpy()
 
 # Validation code
 ################# To be used for inference during training ####################
@@ -96,24 +104,72 @@ def inference(cnv_lyr, backbone_model, fc_layers, gnn_model, val_loader, criteri
     return metric
 
 #####To be used for inference##########
-def inference_model(config):
-    
+def load_inference_model(config, run_type):
+    if config['gnn']=='True':
+        gnn=True
+    else:
+        gnn=False
+    if run_type == 'pytorch':
+        model = Infer_model(config['backbone'],config['split_npz'],gnn)
+        checkpoint = torch.load(config['model_file'], map_location=torch.device('cpu'))
+        glbl_cnv_wt=checkpoint['cnv_lyr_state_dict']
+        glbl_backbone_wt=checkpoint['backbone_model_state_dict']
+        glbl_fc_wt=checkpoint['fc_layers_state_dict']
+
+        model.cnv_lyr.load_state_dict(glbl_cnv_wt)
+        model.backbone_model.load_state_dict(glbl_backbone_wt)
+        model.fc_layers.load_state_dict(glbl_fc_wt)
+        if gnn:
+            sit0_gnn_wt=checkpoint['sit0_gnn_model']
+            sit1_gnn_wt=checkpoint['sit1_gnn_model']
+            sit2_gnn_wt=checkpoint['sit2_gnn_model']
+            sit3_gnn_wt=checkpoint['sit3_gnn_model']
+            sit4_gnn_wt=checkpoint['sit4_gnn_model']
+            glbl_gnn_wt=aggregate_local_weights(sit0_gnn_wt, sit1_gnn_wt, sit2_gnn_wt, sit3_gnn_wt, sit4_gnn_wt, torch.device('cpu'))
+            model.gnn_model.load_state_dict(glbl_gnn_wt)
+        model.eval()
+
+    elif run_type == 'onnx':
+        model = onnxruntime.InferenceSession(os.path.splitext(config['checkpoint'])[0] + ".onnx")
+
+    else:
+        ie = IECore()
+        split_text = os.path.splitext(config['checkpoint'])[0]
+        model_xml =  split_text + ".xml"
+        model_bin = split_text + ".bin"
+        model_temp = ie.read_network(model_xml, model_bin)
+        model = ie.load_network(network=model_temp, device_name='CPU')
+
+    return model
+def inference_model(model, config, run_type):
+    # GPU transfer - Only pytorch models needs to be transfered.
+    if run_type == 'pytorch':
+        if torch.cuda.is_available() and config['gpu'] == 'True':
+            model = model.cuda()
+    data_test=construct_dataset(config['dataset'], config['split_npz'], -999, test_transform, tn_vl_idx=2)
+    test_loader=DataLoader(data_test,batch_size=1, shuffle=False, num_workers=1, pin_memory=False)
     tot_loss=0
     tot_auc=0
     
     gt_lst=[]
     pred_lst=[]
-    model = Infer_model(config['backbone'],config['gnn'])
-    model.eval()
     criterion = Custom_Loss(-999)
-    data_test=construct_dataset(config['dataset'], config['split_npz'], -999, test_transform, tn_vl_idx=2)
-    test_loader=DataLoader(data_test, config['batch_size'], shuffle=False, num_workers=1, pin_memory=False)
+    
     with torch.no_grad():
         for count, sample in enumerate(test_loader):
             
             img=sample['img']
             gt=sample['gt']
-            prd_final = model(img)
+            if torch.cuda.is_available() and config['gpu'] == 'True':
+                img = img.cuda()
+                gt = gt.cuda()
+            if run_type == 'pytorch':
+                prd_final, gt = model(img,gt)  # forward through encoder
+                prd_final = prd_final.cpu().numpy()
+                gt = gt.cpu().numpy()
+            elif run_type == 'onnx':
+                resize_tensor = transforms.Resize([1024,1024])
+            prd_final ,gt= model(img,gt)
             ########Forward Pass #############################################
             loss=criterion(prd_final, gt)
             
@@ -126,7 +182,7 @@ def inference_model(config):
             
             tot_loss=tot_loss+loss.cpu().numpy()
            
-            del loss, gt, prd_final, prd
+            del loss, gt, prd_final
             
     
     gt_lst=np.concatenate(gt_lst, axis=1)

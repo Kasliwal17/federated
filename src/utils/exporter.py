@@ -3,12 +3,12 @@ import os
 from .model import Infer_model
 from .misc import aggregate_local_weights
 class Exporter:
-    def __init__(self, config):
+    def __init__(self, config, gnn=True):
         self.config = config
         self.checkpoint = config.get('checkpoint')
-        self.gnn = config.get('gnn')
+        self.gnn = gnn
         if self.gnn:
-            model = Infer_model(config.get('backbone'),gnn=True)
+            model = Infer_model(config.get('backbone'),config.get('split_path')gnn=True)
         else:
             model = Infer_model(config.get('backbone'),gnn=False)
         self.model = model
@@ -35,11 +35,13 @@ class Exporter:
         input_model = os.path.join(
             os.path.split(self.checkpoint)[0], self.config.get('model_name_onnx'))
         input_shape = self.config.get('input_shape')
+        input_shape1 = input_shape[0]
+        input_shape2 = input_shape[1]
         output_dir = os.path.split(self.checkpoint)[0]
         export_command = f"""mo \
         --framework onnx \
         --input_model {input_model} \
-        --input_shape "{input_shape}" \
+        --input_shape "{input_shape1,input_shape2}" \
         --output_dir {output_dir}"""
 
         if self.config.get('verbose_export'):
@@ -51,11 +53,14 @@ class Exporter:
         print(f"Saving model to {self.config.get('model_name_onnx')}")
         res_path = os.path.join(os.path.split(self.checkpoint)[0], self.config.get('model_name_onnx'))
 
-        dummy_input = torch.randn(1, 1, 320, 320)
+        dummy_input1 = torch.randn(1, 1, 320, 320)
+        dummy_input2 = torch.FloatTensor([[0., 0., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0.]])
 
-        torch.onnx.export(self.model, dummy_input, res_path,
+        torch.onnx.export(self.model, args=(dummy_input1, dummy_input2), f=res_path,
                           opset_version=11, do_constant_folding=True,
-                          input_names=['input'], output_names=['output'],
-                          dynamic_axes={'input': {0: 'batch_size'},
-                                        'output': {0: 'batch_size'}},
+                          input_names=['input_1','input_2'], output_names=['output_1','output_2'],
+                          dynamic_axes={'input_1': {0: 'batch_size'},
+                                        'input_2': {0: 'batch_size'},
+                                        'output_2': {0: 'batch_size'},
+                                        'output_2': {0: 'batch_size'}},
                           verbose=False)
