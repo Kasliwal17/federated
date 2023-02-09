@@ -18,7 +18,7 @@ models also demonstrated their efficacy in modelling local disease co-occurrence
 the ROC curve of 0.79 with a 1.74% improvement.
 
 Figure below shows the overall schematic diagram of the compression engine proposed in <a href="#comp_journal">[1]</a>
-<img src = "./media/overall_arch.webp" width=650>
+<img src = "./media/scheme.jpeg" width=650>
 
 ## Setup
 
