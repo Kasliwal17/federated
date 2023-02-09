@@ -25,7 +25,6 @@ def compute_edge_attr(A):
     return edge, edge_attr
 
 def compute_adjacency_matrix(adj_type, site, split_npz='/storage/aneesh/split.npz'):
-    
     # load the npz file
     a=np.load(split_npz, allow_pickle=True)    
     gt=a['gt']
@@ -37,13 +36,7 @@ def compute_adjacency_matrix(adj_type, site, split_npz='/storage/aneesh/split.np
         idx=np.where(trn_val_tst==0)[0]
     else:
         idx=np.where((clstr_assgn==site) & (trn_val_tst==0))[0]
-
-        ###################################### EDITED HERE ####################################33    
-#     gt=gt[idx,:]
-
     gt=gt[idx]
-    
-    #################################################3
     
     kappa=np.zeros((14,14))
     TP=np.zeros((14,14))
@@ -52,14 +45,10 @@ def compute_adjacency_matrix(adj_type, site, split_npz='/storage/aneesh/split.np
     FN=np.zeros((14,14))
     kappa=np.zeros((14,14))
     agree=np.zeros((14,14))
-    P1=np.zeros((14,14))
-    
     
     for j in range(0,14):
-#         gt_j=gt[:,j]
         gt_j=gt[j]
         for k in range(0, 14):
-#             gt_k=gt[:,k]
             gt_k=gt[k]
             
             ## Kappa and agree are symmetric ie., A(i,j)=A(j,i)
@@ -82,7 +71,8 @@ def compute_adjacency_matrix(adj_type, site, split_npz='/storage/aneesh/split.np
     elif adj_type=='fraction_agreement':
         A=agree
     elif adj_type=='confusion_matrix':
-        A=np.concatenate((np.expand_dims(TP, axis=2), np.expand_dims(TN, axis=2),np.expand_dims(FP, axis=2), np.expand_dims(FN, axis=2)), axis=2)
+        A=np.concatenate((np.expand_dims(TP, axis=2), np.expand_dims(TN, axis=2),
+                          np.expand_dims(FP, axis=2), np.expand_dims(FN, axis=2)), axis=2)
                     
     if A.ndim==2:
         tmp_edge, edge_attr=compute_edge_attr(A)
@@ -93,28 +83,21 @@ def compute_adjacency_matrix(adj_type, site, split_npz='/storage/aneesh/split.np
             tmp_edge, tmp_edge_attr=compute_edge_attr(np.squeeze(A[:,:,x]))
             edge_lst.append(tmp_edge)
             edge_attr_lst.append(tmp_edge_attr)
-            
-            
         edge_attr=torch.cat(edge_attr_lst, dim=1)
-      
     return tmp_edge, edge_attr
 
 ################ Compute weighted average of model weights ##################
 def average_weights(w, cmb_wt, device):
-    
+
     cmb_wt=np.array(cmb_wt)
     cmb_wt=cmb_wt.astype(np.float)
     cmb_wt=cmb_wt/np.sum(cmb_wt)
-    #print(cmb_wt)
-
     wts = torch.tensor(cmb_wt).to(device)
     wts=wts.float()
-    
     w_avg = copy.deepcopy(w[0])
     
     for key in w_avg.keys(): # for each layer
         layer = key.split('.')[-1]
-    
         if layer == 'num_batches_tracked':
             for i in range(1,len(w)): # for each model
                 w_avg[key] += w[i][key].to(device)
@@ -123,10 +106,7 @@ def average_weights(w, cmb_wt, device):
             w_avg[key]=torch.mul(w_avg[key].to(device), wts[0].to(float))
             for i in range(1,len(w)):
                 w_avg[key] += torch.mul(w[i][key].to(device), wts[i].to(float))
-            
-            
     return w_avg
-
 
 def aggregate_local_weights(wt0, wt1, wt2, wt3, wt4, device):
     
@@ -138,7 +118,6 @@ def compute_lcl_wt(epoch, cmb_wts, glbl_wt, prev_lcl_wt, device):
     
     cmb_wt=cmb_wts[epoch]
     lcl_wt=1-cmb_wt
-    
     wt=average_weights([prev_lcl_wt, glbl_wt], [lcl_wt, cmb_wt],device)
-    
     return wt
+    

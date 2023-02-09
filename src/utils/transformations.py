@@ -1,4 +1,4 @@
-import torchvision.transforms as transforms
+from torchvision import transforms
 ################# Data Augmentation and Transforms #####################
 
 # Training Transformations/ Data Augmentation
@@ -9,9 +9,6 @@ train_transform=transforms.Compose([
                                     transforms.ToTensor(),
                                     transforms.Normalize([0.5], [0.5])
                                     ])
-
-
-
 # Test/Val Transformations
 test_transform=transforms.Compose([
                                     transforms.Resize(320),

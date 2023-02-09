@@ -38,6 +38,6 @@ if __name__ == '__main__':
                         required=True, help='Name of model and log files')
     parser.add_argument('--gnn', action='store_true', help='using gnn or not?')
     parser.add_argument('--backbone', type=str, required=False, default='resnet', help='backbone model')
-    args = parser.parse_args()
+    arguments = parser.parse_args()
 
-    main(args)
+    main(arguments)

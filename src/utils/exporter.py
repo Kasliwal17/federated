@@ -28,7 +28,9 @@ class Exporter:
             sit2_gnn_wt=checkpoint['sit2_gnn_model']
             sit3_gnn_wt=checkpoint['sit3_gnn_model']
             sit4_gnn_wt=checkpoint['sit4_gnn_model']
-            glbl_gnn_wt=aggregate_local_weights(sit0_gnn_wt, sit1_gnn_wt, sit2_gnn_wt, sit3_gnn_wt, sit4_gnn_wt, torch.device('cpu'))
+            glbl_gnn_wt=aggregate_local_weights(sit0_gnn_wt, sit1_gnn_wt,
+                                                sit2_gnn_wt,sit3_gnn_wt,
+                                                sit4_gnn_wt, torch.device('cpu'))
             self.model.gnn_model.load_state_dict(glbl_gnn_wt)
 
     def export_model_ir(self):

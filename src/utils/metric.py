@@ -6,16 +6,12 @@ def compute_performance(pred, gt):
     auc_lst=[]
     sens_lst=[]
     spec_lst=[]
-    
     pred_scr=pred.copy()
     pred_cls=pred.copy()
-    
     idx0=np.where(pred_cls<0.5)
     idx1=np.where(pred_cls>=0.5)
     pred_cls[idx0]=0
     pred_cls[idx1]=1
-    
-    
     
     for cls in range(0, pred_scr.shape[1]):    
         tmp_prd_scr=pred_scr[:,cls]
@@ -36,10 +32,10 @@ def compute_performance(pred, gt):
         spec_lst.append(spec)
         acc_lst.append(acc)
         auc_lst.append(auc)
-        
+    
     sens_lst=np.array(sens_lst)
     spec_lst=np.array(spec_lst)
     acc_lst=np.array(acc_lst)
     auc_lst=np.array(auc_lst)
-    
     return sens_lst, spec_lst, acc_lst, auc_lst
+    

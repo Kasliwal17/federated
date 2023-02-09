@@ -1,4 +1,4 @@
-import torch.nn as nn
+from torch import nn
 import torch
 from torch_geometric.nn import NNConv
 from torch_geometric.nn import BatchNorm as GNN_BatchNorm
@@ -14,7 +14,6 @@ from torchvision import models
  
  This will allow us to simply load the weights for each CNN model separately, 
  may be useful when updating only part of the network
- 
  '''
 class Fully_Connected_Layer(nn.Module):
     def __init__(self, inp_dim, ftr_dim):
@@ -58,7 +57,6 @@ class Fully_Connected_Layer(nn.Module):
         prd=torch.cat(prd_lst, axis=1)
         return ftr_lst, prd
     
-    
 ############## Conv 1st layer #######################
 
 class First_Conv(nn.Module):
@@ -72,8 +70,6 @@ class First_Conv(nn.Module):
     def forward(self, x):
         x=self.convert_channels(x)
         return x
-
-
 
 
 ################## GNN Architecture Classes #############
@@ -107,9 +103,7 @@ class Res_Graph_Conv_Lyr(nn.Module):
         h=self.GNN_lyr(x, edge_index, edge_attr)
         h=self.bn(h)
         h=F.relu(h)
-        
-        return (x+h)
-        #return h
+        return x+h
     
 ########################################################################################
 
@@ -135,7 +129,6 @@ class GNN_Network(nn.Module):
             out_chnls=max(out_chnls,1)
             my_gcn.append(Res_Graph_Conv_Lyr(in_chnls, out_chnls, create_mlp(ftr_dim,in_chnls*out_chnls), aggr_md))
             in_chnls=out_chnls
-        
         #### Add the final classification layer that will convert output to 1D 
         my_gcn.append(NNConv(in_chnls, 1, create_mlp(ftr_dim, 1*in_chnls), aggr='mean'))
         
@@ -148,25 +141,17 @@ class GNN_Network(nn.Module):
         x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
         cnt=0
         x=self.my_gcn[cnt](x, edge_index, edge_attr)
-        #x=F.relu(x)
-        
-        #print('entering loop ...')
         for k in range(0, self.dpth):
             cnt=cnt+1
             #print(cnt)
             x=self.my_gcn[cnt](x, edge_index, edge_attr)
-            #x=F.relu(x)
-        
-        #print('out of loop...')
         cnt=cnt+1
         out=self.my_gcn[cnt](x, edge_index, edge_attr) # num_nodes by 1
-        #out=F.sigmoid(out)
         return out
 
 
-######################################################################
 ############## Models specifically defined for inference #############
-######################################################################
+
 
 #####Gnn model for inference, works without gnn dataloader
 
@@ -175,7 +160,6 @@ class GNN_Network_infer(nn.Module):
         super(GNN_Network_infer, self).__init__()
         
         my_gcn=nn.ModuleList()
-        
         # Base channels is actually the fraction of inp.
         in_chnls=int(in_chnls)
         base_chnls=int(base_chnls*in_chnls)
@@ -191,7 +175,6 @@ class GNN_Network_infer(nn.Module):
             out_chnls=max(out_chnls,1)
             my_gcn.append(Res_Graph_Conv_Lyr(in_chnls, out_chnls, create_mlp(ftr_dim,in_chnls*out_chnls), aggr_md))
             in_chnls=out_chnls
-        
         #### Add the final classification layer that will convert output to 1D 
         my_gcn.append(NNConv(in_chnls, 1, create_mlp(ftr_dim, 1*in_chnls), aggr='mean'))
         
@@ -202,19 +185,11 @@ class GNN_Network_infer(nn.Module):
     def forward(self, x):
         cnt=0
         x=self.my_gcn[cnt](x, self.edge_index, self.edge_attr)
-        #x=F.relu(x)
-        
-        #print('entering loop ...')
         for k in range(0, self.dpth):
             cnt=cnt+1
-            #print(cnt)
             x=self.my_gcn[cnt](x, self.edge_index, self.edge_attr)
-            #x=F.relu(x)
-        
-        #print('out of loop...')
         cnt=cnt+1
-        out=self.my_gcn[cnt](x, self.edge_index, self.edge_attr) # num_nodes by 1
-        #out=F.sigmoid(out)
+        out=self.my_gcn[cnt](x, self.edge_index, self.edge_attr) 
         return out
 
 ########Combined model for inference and export###########
@@ -236,16 +211,15 @@ class Infer_model(nn.Module):
             backbone_model=xception.xception(pretrained=True)
             backbone_model.fc=nn.Identity()
     
-
         cnv_lyr=First_Conv()
         fc_layers=Fully_Connected_Layer(inp_dim, ftr_dim=512)
         self.edge_index, self.edge_attr= compute_adjacency_matrix('confusion_matrix', -999, split_path)
-        if gnn==True:
+        if gnn is True:
             gnn_model=GNN_Network_infer(in_chnls=512, base_chnls=1, grwth_rate=1, depth=1, aggr_md='mean', ftr_dim=4,edge_index=self.edge_index, edge_attr=self.edge_attr)
         self.cnv_lyr=cnv_lyr
         self.backbone_model=backbone_model
         self.fc_layers = fc_layers
-        if gnn==True:
+        if gnn is True:
             self.gnn_model = gnn_model
         self.DataLoader_GNN = DataLoader_GNN
         self.Data_GNN = Data_GNN
@@ -260,5 +234,4 @@ class Infer_model(nn.Module):
             prd=self.gnn_model(x=ftr_list)   
             prd=prd.transpose(1,0) 
         return prd
-    
     

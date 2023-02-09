@@ -1,13 +1,11 @@
-import torch.nn as nn
+from torch import nn
 import torch
 import numpy as np
 
 ############# Define the Weighted Loss. The weights are different for each class ########
-
 class Custom_Loss(nn.Module):
     def __init__(self, site, device=torch.device('cpu')):
         super(Custom_Loss, self).__init__()
-        
         if site==-999:
             wts_pos = np.array([ 6.07201409, 12.57545272,  5.07639982,  1.29352719, 14.83679525,  
                                 2.61834939, 9.25154963, 22.75312856, 4.12082252,  7.02592567,  
@@ -24,7 +22,6 @@ class Custom_Loss(nn.Module):
             wts_neg=np.array([3.14594016, 4.0373047,  7.68875903, 7.72081532, 3.24612089, 4.91690432, 
                     3.28256303, 3.17389786, 3.69767786, 3.2589213,  6.93769946, 3.16636059, 
                     3.24622626, 6.96815553])
-            
         elif site==1:
             wts_pos=np.array([ 31.82686187, 649.35064935, 568.18181818,  11.06439478,  75.75757576, 
                     16.73920321,  11.19319454,  27.94076558,  25.4517689,  158.73015873, 
@@ -56,7 +53,6 @@ class Custom_Loss(nn.Module):
                     2.95718003,  2.95613102, 3.29978551,  2.95229098,  4.09668169,  2.95098415, 
                     3.13952028, 10.06137438])
 
-            
         wts_pos = torch.from_numpy(wts_pos)
         wts_pos = wts_pos.type(torch.Tensor)
         wts_pos=wts_pos.to(device) # size 1 by cls
@@ -65,22 +61,15 @@ class Custom_Loss(nn.Module):
         wts_neg = wts_neg.type(torch.Tensor)
         wts_neg=wts_neg.to(device) # size 1 by cls
         
-        
         self.wts_pos=wts_pos
         self.wts_neg=wts_neg
-        
-        #self.bce=nn.BCELoss(reduction='none')
         self.bce=nn.BCEWithLogitsLoss(reduction='none')
         
     def forward(self, ypred, ytrue):
-        
         msk = ((1-ytrue)*self.wts_neg) + (ytrue*self.wts_pos) #1 if ytrue is 0
-        #print(msk.shape)
-        
         loss=self.bce(ypred,ytrue) # bsz, cls
         loss=loss*msk
-        
         loss=loss.view(-1) # flatten all batches and class losses
         loss=torch.mean(loss) 
-        
         return loss
+        

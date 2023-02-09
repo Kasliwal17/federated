@@ -1,6 +1,5 @@
-import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn
 from .model import First_Conv, Fully_Connected_Layer, GNN_Network
 from .dataloader import construct_dataset
 from .loss import Custom_Loss
@@ -12,12 +11,7 @@ from torch_geometric.data import Data as Data_GNN
 from torch_geometric.data import DataLoader as DataLoader_GNN
 from .inference_utils import inference
 from .transformations import train_transform, test_transform
-from .misc import average_weights, aggregate_local_weights, compute_lcl_wt
-
-
-        
-
-
+from .misc import aggregate_local_weights, compute_lcl_wt
 
 # Train 1 batch update
 def train_one_batch(sample, cnv_lyr, backbone_model, fc_layers, gnn_model, optim1, optim2, optim3, optim4, 
@@ -38,7 +32,8 @@ def train_one_batch(sample, cnv_lyr, backbone_model, fc_layers, gnn_model, optim
         
         data_lst=[]
         for k in range(0, ftr_lst.shape[0]):
-            data_lst.append(Data_GNN(x=ftr_lst[k,:,:], edge_index=edge_index, edge_attr=edge_attr, y=torch.unsqueeze(gt[k,:], dim=1))) 
+            data_lst.append(Data_GNN(x=ftr_lst[k,:,:], edge_index=edge_index,
+                                     edge_attr=edge_attr, y=torch.unsqueeze(gt[k,:], dim=1))) 
         loader = DataLoader_GNN(data_lst, batch_size=ftr_lst.shape[0])
         loader=next(iter(loader)).to(device)
         gt=loader.y
@@ -65,7 +60,7 @@ def train_one_batch(sample, cnv_lyr, backbone_model, fc_layers, gnn_model, optim
     #update weights through backprop using Adam 
 
     #if training is without gnn 
-    if gnn_model==None:
+    if gnn_model is not None:
         optim1.step()
         optim2.step()
         optim3.step()
@@ -84,7 +79,8 @@ def train_one_batch(sample, cnv_lyr, backbone_model, fc_layers, gnn_model, optim
 
 
 #### Train main
-def train_end_to_end(lr, cnv_lyr, backbone_model, fc_layers, gnn_model, train_loader, trn_typ, n_batches, criterion, device, 
+def train_end_to_end(lr, cnv_lyr, backbone_model, fc_layers, gnn_model,
+                     train_loader, trn_typ, n_batches, criterion, device, 
                      edge_index=None, edge_attr=None):
     
     cnv_lyr.train() 
@@ -93,7 +89,6 @@ def train_end_to_end(lr, cnv_lyr, backbone_model, fc_layers, gnn_model, train_lo
     
     
     ########## Optimizers and Schedulers #############
-    total_batches=len(train_loader)
     #print(total_batches)
     # lr=10**(-5)
     
@@ -131,9 +126,9 @@ def train_end_to_end(lr, cnv_lyr, backbone_model, fc_layers, gnn_model, train_lo
 
     return cnv_lyr, backbone_model, fc_layers, gnn_model
 
-
 ####For training with gnn
-def lcl_train_gnn(lr, trn_loader, val_loader, criterion, cnv_lyr, backbone_model,fc_layers, gnn_model, edge_index, edge_attr, device):
+def lcl_train_gnn(lr, trn_loader, val_loader, criterion, cnv_lyr,
+                  backbone_model,fc_layers, gnn_model, edge_index, edge_attr, device):
     
     n_batches=1500
     ####### Freeze and train the part which is specific to each site only
@@ -152,7 +147,6 @@ def lcl_train_gnn(lr, trn_loader, val_loader, criterion, cnv_lyr, backbone_model
     cnv_lyr, backbone_model, fc_layers, gnn_model=train_end_to_end(lr, cnv_lyr, backbone_model, fc_layers, 
                                                         gnn_model, trn_loader,'full', 2*n_batches, criterion, device,
                                                         edge_index, edge_attr)
-    
     
     cnv_wt=copy.deepcopy(cnv_lyr.state_dict())
     backbone_wt=copy.deepcopy(backbone_model.state_dict())
@@ -246,7 +240,8 @@ def instantiate_architecture(ftr_dim, model_name, gnn=False):
 
 
 #Main function for training                
-def trainer_with_GNN(lr, b_sz, img_pth, split_npz, train_transform, test_transform, max_epochs, backbone, device, restart_checkpoint='', savepoint=''):
+def trainer_with_GNN(lr, b_sz, img_pth, split_npz, train_transform, test_transform,
+                     max_epochs, backbone, device, restart_checkpoint='', savepoint=''):
     
     ###### Instantiate the CNN-GNN Architecture ##############
     cnv_lyr, backbone_model, fc_layers, gnn_model=instantiate_architecture(ftr_dim=512, model_name=backbone, gnn=True)
@@ -287,9 +282,8 @@ def trainer_with_GNN(lr, b_sz, img_pth, split_npz, train_transform, test_transfo
     sit4_gnn_wt=copy.deepcopy(gnn_wt)
     
     del gnn_wt
-    
     # Load previous checkpoint if resuming the  training else comment out
-    if (restart_checkpoint!=''):
+    if restart_checkpoint!='':
         checkpoint=torch.load(restart_checkpoint)
         glbl_cnv_wt=checkpoint['cnv_lyr_state_dict']
         glbl_backbone_wt=checkpoint['backbone_model_state_dict']
@@ -364,7 +358,9 @@ def trainer_with_GNN(lr, b_sz, img_pth, split_npz, train_transform, test_transfo
         if avg_val>max_val:
             max_val=avg_val
             mx_nm=savepoint+'best_weight_'+str(max_val)+'_'+str(epoch)+'.pt'
-            save_model_weights(mx_nm, glbl_cnv_wt, glbl_backbone_wt, glbl_fc_wt, sit0_gnn_wt, sit1_gnn_wt, sit2_gnn_wt, sit3_gnn_wt, sit4_gnn_wt)
+            save_model_weights(mx_nm, glbl_cnv_wt, glbl_backbone_wt,
+                               glbl_fc_wt, sit0_gnn_wt, sit1_gnn_wt,
+                               sit2_gnn_wt, sit3_gnn_wt, sit4_gnn_wt)
             print('Validation Performance Improved !')
             
             
@@ -378,11 +374,9 @@ def trainer_with_GNN(lr, b_sz, img_pth, split_npz, train_transform, test_transfo
         
         glbl_fc_wt=aggregate_local_weights(sit0_fc_wt, sit1_fc_wt, sit2_fc_wt, sit3_fc_wt, sit4_fc_wt, device)
         
-        glbl_gnn_wt=aggregate_local_weights(sit0_gnn_wt, sit1_gnn_wt, sit2_gnn_wt, sit3_gnn_wt, sit4_gnn_wt, device)
-        
-    
-    
-def trainer_without_GNN( avg_schedule, lr, b_sz, img_pth, split_npz, train_transform, test_transform, max_epochs, backbone, device, checkpoint='', savepath=''):
+
+def trainer_without_GNN( avg_schedule, lr, b_sz, img_pth, split_npz, train_transform,
+                         test_transform, max_epochs, backbone, device, checkpoint='', savepath=''):
 
     cnv_lyr1, backbone_model, fc_layers = instantiate_architecture(ftr_dim=512, model_name=backbone)
     cnv_lyr1 = cnv_lyr1.to(device)
@@ -653,9 +647,13 @@ def train_model(config):
     else:
         device = torch.device('cpu')
     if config['gnn']=="True":
-        trainer_with_GNN(config['lr'],config['batch_size'], config['data'], config['split_npz'], train_transform, test_transform, config['epochs'], config['backbone'], device, config['checkpoint'], config['savepath'] )
+        trainer_with_GNN(config['lr'],config['batch_size'], config['data'], config['split_npz'],
+                         train_transform, test_transform, config['epochs'], config['backbone'],
+                         device, config['checkpoint'], config['savepath'] )
     else:
         avg_schedule = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-        trainer_without_GNN(avg_schedule, config['lr'], config['batch_size'], config['data'], config['split_npz'], train_transform, test_transform, config['epochs'], config['backbone'], device, config['checkpoint'], config['savepath'])
+        trainer_without_GNN(avg_schedule, config['lr'], config['batch_size'], config['data'],
+                            config['split_npz'], train_transform, test_transform, config['epochs'],
+                            config['backbone'], device, config['checkpoint'], config['savepath'])
 
 

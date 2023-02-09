@@ -34,6 +34,6 @@ if __name__ == '__main__':
     parser.add_argument('--gnn', action='store_true',type=str , help='using gnn or not?')
     parser.add_argument('--backbone', type=str, required=False, default='resnet', help='backbone model')
     parser.add_argument('--checkpoint', type=str, required=True, help='checkpoint to refer for onnx and ir models')
-    args = parser.parse_args()
+    arguments = parser.parse_args()
 
-    main(args)
+    main(arguments)

@@ -15,17 +15,16 @@ from .misc import aggregate_local_weights
 import os
 import onnxruntime
 
-
 def to_numpy(tensor):
     return tensor.detach().cpu().numpy() if tensor.requires_grad else tensor.cpu().numpy()
 
 # Validation code
 ################# To be used for inference during training ####################
-def inference(cnv_lyr, backbone_model, fc_layers, gnn_model, val_loader, criterion, device,edge_index=None, edge_attr=None):
+def inference(cnv_lyr, backbone_model, fc_layers, gnn_model, val_loader,
+              criterion, device,edge_index=None, edge_attr=None):
     
     tot_loss=0
-    tot_auc=0
-    
+    # tot_auc=0
     gt_lst=[]
     pred_lst=[]
     
@@ -37,24 +36,20 @@ def inference(cnv_lyr, backbone_model, fc_layers, gnn_model, val_loader, criteri
     
     with torch.no_grad():
         for count, sample in enumerate(val_loader):
-            
             img=sample['img']
             gt=sample['gt']
-    
             img=img.to(device)
             gt=gt.to(device)
-            
             ##############################################################
-            
             img_3chnl=cnv_lyr(img)
             gap_ftr=backbone_model(img_3chnl)
             ftr_lst, prd=fc_layers(gap_ftr)
             if gnn_model is not None:
                 ftr_lst=torch.cat(ftr_lst, dim=1)
-        
                 data_lst=[]
                 for k in range(0, ftr_lst.shape[0]):
-                    data_lst.append(Data_GNN(x=ftr_lst[k,:,:], edge_index=edge_index, edge_attr=edge_attr, y=torch.unsqueeze(gt[k,:], dim=1))) 
+                    data_lst.append(Data_GNN(x=ftr_lst[k,:,:], edge_index=edge_index,
+                                             edge_attr=edge_attr, y=torch.unsqueeze(gt[k,:], dim=1))) 
                 
                 loader = DataLoader_GNN(data_lst, batch_size=ftr_lst.shape[0])
                 loader=next(iter(loader)).to(device)
@@ -64,20 +59,14 @@ def inference(cnv_lyr, backbone_model, fc_layers, gnn_model, val_loader, criteri
                 prd_final=prd
             ########Forward Pass #############################################
             loss=criterion(prd_final, gt)
-            
             # Apply the sigmoid
             prd_final=F.sigmoid(prd_final)
             
             gt_lst.append(gt.cpu().numpy())
             pred_lst.append(prd_final.cpu().numpy())
-            
-            
-            
             tot_loss=tot_loss+loss.cpu().numpy()
-           
             del loss, gt, prd_final, prd
             
-    
     gt_lst=np.concatenate(gt_lst, axis=1)
     pred_lst=np.concatenate(pred_lst, axis=1)
     
@@ -88,21 +77,18 @@ def inference(cnv_lyr, backbone_model, fc_layers, gnn_model, val_loader, criteri
     count=count+1 # since it began from 0
     avg_loss=tot_loss/count
     
-    sens_lst, spec_lst, acc_lst, auc_lst=compute_performance(pred_lst, gt_lst)
+    # sens_lst, spec_lst, acc_lst, auc_lst=compute_performance(pred_lst, gt_lst)
+    _, _, _, auc_lst=compute_performance(pred_lst, gt_lst)
     avg_auc=np.mean(auc_lst)
     
-    
     print ("\n Val_Loss:  {:.4f},  Avg. AUC: {:.4f}".format(avg_loss, avg_auc))
-    
-          
     metric=avg_auc # this will be monitored for Early Stopping
-            
+    
     cnv_lyr.train()
     backbone_model.train() 
     fc_layers.train()
     if gnn_model is not None:
         gnn_model.train()
-    
     return metric
 
 #####To be used for inference##########
@@ -127,7 +113,8 @@ def load_inference_model(config, run_type):
             sit2_gnn_wt=checkpoint['sit2_gnn_model']
             sit3_gnn_wt=checkpoint['sit3_gnn_model']
             sit4_gnn_wt=checkpoint['sit4_gnn_model']
-            glbl_gnn_wt=aggregate_local_weights(sit0_gnn_wt, sit1_gnn_wt, sit2_gnn_wt, sit3_gnn_wt, sit4_gnn_wt, torch.device('cpu'))
+            glbl_gnn_wt=aggregate_local_weights(sit0_gnn_wt, sit1_gnn_wt, sit2_gnn_wt,
+                                                sit3_gnn_wt, sit4_gnn_wt, torch.device('cpu'))
             model.gnn_model.load_state_dict(glbl_gnn_wt)
         model.eval()
 
@@ -214,7 +201,8 @@ def validate_model(model, config, run_type):
     count=count+1 # since it began from 0
     avg_loss=tot_loss/count
     
-    sens_lst, spec_lst, acc_lst, auc_lst=compute_performance(pred_lst, gt_lst)
+    # sens_lst, spec_lst, acc_lst, auc_lst=compute_performance(pred_lst, gt_lst)
+    _, _, _, auc_lst=compute_performance(pred_lst, gt_lst)
     avg_auc=np.mean(auc_lst)
     
     
