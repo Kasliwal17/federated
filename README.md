@@ -17,8 +17,31 @@ performance over centralized training. The site-specific GNN
 models also demonstrated their efficacy in modelling local disease co-occurrence statistics leading to an average area under
 the ROC curve of 0.79 with a 1.74% improvement.
 
-Figure below shows the overall schematic diagram of the compression engine proposed in <a href="#comp_journal">[1]</a>
+Figure below shows the overall schematic diagram of federated learning proposed in <a href="#comp_journal">[1]</a>
 <img src = "./media/scheme.png" width=650>
+
+## Network Architecture
+
+### The proposed CNN-GNN architecture 
+
+<img src = "./media/architecture.jpeg" width=650>
+
+## Results
+
+The overall performance of the proposed CNN-GNN is 
+<img src = "./media/overall_performance.png" width=650>
+
+The modality specific performance of the proposed compressor decompressor model is
+
+<img src = "./media/modality_specific_performance.png" width=650>
+
+## Model
+
+Download `.pth` checkpoint for CNN-GNN model trained on CheXpert dataset with the following [link](http://kliv.iitkgp.ac.in/projects/miriad/model_weights/bmi34/high_low/weights.zip).
+
+Inference models will be made available in the [open_model_zoo](https://github.com/openvinotoolkit/open_model_zoo/tree/master/models/public) as well.
+
+Note: The ONNX and IR representation models accepts inputs of fixed size mentioned in configuration file. This needs to be updated based on the input size.
 
 ## Setup
 
@@ -79,9 +102,10 @@ Necessary unit tests have been provided in the tests directory. The sample/toy d
 
 ## Acknowledgement
 
-The model and architecture was first published in Circuits, Systems, and Signal Processing, Springer., 2022 by Springer Nature.
+The model and architecture was first published in 2021 IEEE 18th International Symposium on Biomedical Imaging (ISBI).
 
-This work is undertaken as part of Intel India Grand Challenge 2016 Project MIRIAD: Many Incarnations of Screening of Radiology for High Throughput Disease Screening via Multiple Instance Reinforcement Learning with Adversarial Deep Neural Networks, sponsored by Intel Technology India Pvt. Ltd., Bangalore, India.
+This work is supported through a research grant from Intel
+India Grand Challenge 2016 for Project MIRIAD.
 
 **Principal Investigators**
 
@@ -115,5 +139,5 @@ Github username: Rakshith2597
 
 
 <div id="comp_journal">
-<a href="#results">[1]</a>  Raj, Aditya and Sathish, Rakshith and Sarkar, Tandra and Sethuraman, Ramanathan and Sheet, Debdoot; Designing Deep Neural High-Density Compression Engines for Radiology Images; In Circuits, Systems, and Signal Processing, Springer., 2022. <a href="https://link.springer.com/article/10.1007/s00034-022-02222-0"> (link) </a>
+<a href="#results">[1]</a>  Chakravarty, Arunava and Kar, Avik and Sethuraman, Ramanathan and Sheet, Debdoot; Federated Learning for Site Aware Chest Radiograph Screening; In 2021 IEEE 18th International Symposium on Biomedical Imaging (ISBI). <a href="https://ieeexplore.ieee.org/document/9433876"> (link) </a>
 </div>
