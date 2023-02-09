@@ -20,20 +20,19 @@ the ROC curve of 0.79 with a 1.74% improvement.
 Figure below shows the overall schematic diagram of federated learning proposed in <a href="#comp_journal">[1]</a>
 <img src = "./media/scheme.png" width=650>
 
-## Network Architecture
-
-### The proposed CNN-GNN architecture 
+## The proposed CNN-GNN architecture 
 
 <img src = "./media/architecture.jpeg" width=650>
+
+Separate Fully Connected (FC) layers are employed to obtain different 512-D
+features for each class. These are used as node features to construct a graph whose edges capture the co-occurrence dependencies
+between the classes at each site. The graph is provided as input to a Graph Neural Network to obtain the prediction labels for
+each node. The entire CNN-GNN architecture is trainable in an end-to-end manner.
 
 ## Results
 
 The overall performance of the proposed CNN-GNN is 
-<img src = "./media/overall_performance.png" width=650>
-
-The modality specific performance of the proposed compressor decompressor model is
-
-<img src = "./media/modality_specific_performance.png" width=650>
+<img src = "./media/results.jpeg" width=650>
 
 ## Model
 
@@ -109,10 +108,10 @@ India Grand Challenge 2016 for Project MIRIAD.
 
 **Principal Investigators**
 
-<a href="https://www.linkedin.com/in/debdoot/">Dr Debdoot Sheet</a>,<a href="http://www.iitkgp.ac.in/department/EE/faculty/ee-nirmalya"> Dr Nirmalya Ghosh (Co-PI) </a></br>
+<a href="https://www.linkedin.com/in/debdoot/">Dr Debdoot Sheet</a></br>
 Department of Electrical Engineering,</br>
 Indian Institute of Technology Kharagpur</br>
-email: debdoot@ee.iitkgp.ac.in, nirmalya@ee.iitkgp.ac.in
+email: debdoot@ee.iitkgp.ac.in
 
 <a href="https://www.linkedin.com/in/ramanathan-sethuraman-27a12aba/">Dr Ramanathan Sethuraman</a>,</br>
 Intel Technology India Pvt. Ltd.</br>
