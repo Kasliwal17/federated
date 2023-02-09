@@ -4,13 +4,14 @@ from utils.inference_utils import inference_model
 def main(args):
     config = {
         'model_file': args.model_file,
-        'inferdata': args.inferdata,
+        'dataset': args.dataset,
         'gpu': args.gpu,
-        'out_latent': args.out_latent,
+        'backbone': args.backbone,
+        'split_npz': args.split_npz,
         'max_samples': args.max_samples,
         'gnn': args.gnn
     }
-    inference_model(config)
+    inference_model(config,run_type=args.run_type)
 
 
 if __name__ == '__main__':
