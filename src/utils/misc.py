@@ -131,7 +131,7 @@ def average_weights(w, cmb_wt, device):
 def aggregate_local_weights(wt0, wt1, wt2, wt3, wt4, device):
     
     wt=average_weights([wt0, wt1, wt2, wt3, wt4], 
-                       [1.0, 2030.0/1997, 2093.0/1997, 1978.0/1997, 2122.0/1997])
+                       [1.0, 2030.0/1997, 2093.0/1997, 1978.0/1997, 2122.0/1997],device)
     return wt
 
 def compute_lcl_wt(epoch, cmb_wts, glbl_wt, prev_lcl_wt, device):
@@ -139,6 +139,6 @@ def compute_lcl_wt(epoch, cmb_wts, glbl_wt, prev_lcl_wt, device):
     cmb_wt=cmb_wts[epoch]
     lcl_wt=1-cmb_wt
     
-    wt=average_weights(device, [prev_lcl_wt, glbl_wt], [lcl_wt, cmb_wt])
+    wt=average_weights([prev_lcl_wt, glbl_wt], [lcl_wt, cmb_wt],device)
     
     return wt

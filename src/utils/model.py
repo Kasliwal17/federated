@@ -163,6 +163,60 @@ class GNN_Network(nn.Module):
         #out=F.sigmoid(out)
         return out
 
+
+######################################################################
+############## Models specifically defined for inference #############
+######################################################################
+
+#####Gnn model for inference, works without gnn dataloader
+
+class GNN_Network_infer(nn.Module):
+    def __init__(self, in_chnls, base_chnls, grwth_rate, depth, aggr_md, ftr_dim, edge_index, edge_attr):
+        super(GNN_Network_infer, self).__init__()
+        
+        my_gcn=nn.ModuleList()
+        
+        # Base channels is actually the fraction of inp.
+        in_chnls=int(in_chnls)
+        base_chnls=int(base_chnls*in_chnls)
+        
+        # A GCN to map input channels to base channels dimensions
+        my_gcn.append(Res_Graph_Conv_Lyr(in_chnls, base_chnls, create_mlp(ftr_dim, in_chnls*base_chnls), aggr_md))
+        
+        in_chnls=base_chnls
+        for k in range(0, depth):
+            out_chnls=int(in_chnls*grwth_rate)
+            # Get a GCN
+            in_chnls=max(in_chnls,1)
+            out_chnls=max(out_chnls,1)
+            my_gcn.append(Res_Graph_Conv_Lyr(in_chnls, out_chnls, create_mlp(ftr_dim,in_chnls*out_chnls), aggr_md))
+            in_chnls=out_chnls
+        
+        #### Add the final classification layer that will convert output to 1D 
+        my_gcn.append(NNConv(in_chnls, 1, create_mlp(ftr_dim, 1*in_chnls), aggr='mean'))
+        
+        self.my_gcn=my_gcn
+        self.dpth=depth
+        self.edge_index, self.edge_attr= edge_index, edge_attr
+    
+    def forward(self, x):
+        cnt=0
+        x=self.my_gcn[cnt](x, self.edge_index, self.edge_attr)
+        #x=F.relu(x)
+        
+        #print('entering loop ...')
+        for k in range(0, self.dpth):
+            cnt=cnt+1
+            #print(cnt)
+            x=self.my_gcn[cnt](x, self.edge_index, self.edge_attr)
+            #x=F.relu(x)
+        
+        #print('out of loop...')
+        cnt=cnt+1
+        out=self.my_gcn[cnt](x, self.edge_index, self.edge_attr) # num_nodes by 1
+        #out=F.sigmoid(out)
+        return out
+
 ########Combined model for inference and export###########
 class Infer_model(nn.Module):
     def __init__(self, backbone,split_path, gnn=True):
@@ -174,7 +228,7 @@ class Infer_model(nn.Module):
             backbone_model.classifier=nn.Identity()
         elif backbone=='resnet':
             inp_dim=512
-            backbone_model=models.resnet18(pretrained=True)
+            backbone_model=models.resnet18(weights='IMAGENET1K_V1')
             backbone_model.fc=nn.Identity()
     
         elif backbone=='xception':
@@ -185,8 +239,9 @@ class Infer_model(nn.Module):
 
         cnv_lyr=First_Conv()
         fc_layers=Fully_Connected_Layer(inp_dim, ftr_dim=512)
+        self.edge_index, self.edge_attr= compute_adjacency_matrix('confusion_matrix', -999, split_path)
         if gnn==True:
-            gnn_model=GNN_Network(in_chnls=512, base_chnls=1, grwth_rate=1, depth=1, aggr_md='mean', ftr_dim=4)
+            gnn_model=GNN_Network_infer(in_chnls=512, base_chnls=1, grwth_rate=1, depth=1, aggr_md='mean', ftr_dim=4,edge_index=self.edge_index, edge_attr=self.edge_attr)
         self.cnv_lyr=cnv_lyr
         self.backbone_model=backbone_model
         self.fc_layers = fc_layers
@@ -194,26 +249,16 @@ class Infer_model(nn.Module):
             self.gnn_model = gnn_model
         self.DataLoader_GNN = DataLoader_GNN
         self.Data_GNN = Data_GNN
-        self.edge_index, self.edge_attr= compute_adjacency_matrix('confusion_matrix', -999, split_path)
-
 
     def forward(self, x):
         img_3chnl=self.cnv_lyr(x)
         gap_ftr=self.backbone_model(img_3chnl)
-        ftr_lst, prd=self.fc_layers(gap_ftr)
+        ftr_list, prd=self.fc_layers(gap_ftr)
+        ftr_list=torch.cat(ftr_list, dim=1)
+        ftr_list = ftr_list[0]
         if self.gnn==True:
-            # ftr_lst = ftr_lst.unsqueeze(0)
-            ftr_lst=torch.cat(ftr_lst, dim=1)
-        
-            data_lst=[]
-            for k in range(0, ftr_lst.shape[0]):
-                 data_lst.append(self.Data_GNN(x=ftr_lst[k,:,:], edge_index=self.edge_index, edge_attr=self.edge_attr)) 
-                
-            loader = self.DataLoader_GNN(data_lst, batch_size=ftr_lst.shape[0])
-            loader=next(iter(loader))
-            prd_final=self.gnn_model(loader)    
-        else:
-            prd_final=prd
-        return prd_final
+            prd=self.gnn_model(x=ftr_list)   
+            prd=prd.transpose(1,0) 
+        return prd
     
     

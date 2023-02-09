@@ -11,7 +11,7 @@ def get_config(action, gnn=True, config_path=""):
         with open(os.path.join(config_path, 'download_configs.json')) as f1:
             config = json.load(f1)
     else:
-        if gnn:
+        if gnn==True:
             with open(os.path.join(config_path, 'fl_with_gnn.json')) as f1:
                 config_file = json.load(f1)
             config = config_file[action]

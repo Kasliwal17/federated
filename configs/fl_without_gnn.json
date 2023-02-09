@@ -1,39 +1,40 @@
 {
     "train": {
-        "data": "dataset/data/",
-        "split": "dataset/split.npz",
-        "batch_size": 16,
-        "epochs": 5,
+        "data": "/storage/adityak/chest_x_ray/",
+        "split_npz": "/storage/adityak/split.npz",
+        "batch_size": 12,
+        "epochs": 1,
         "gpu": "True",
-        "model_file_name": "model_weights/cbis_a1_b1.model",
+        "model_file": "/storage/adityak/wt_without_gnn/best_weight_0.65908386103622_19.pt",
         "lr": 1e-5,
-        "checkpoint": "model_weights/cbis_a1_b1.model",
-        "savepath": "model_weights/"
+        "checkpoint": "/storage/adityak/wt_without_gnn/best_weight_0.65908386103622_19.pt",
+        "savepath": "/storage/adityak/wt_without_gnn/",
+        "backbone":"resnet",
+        "gnn":"False"
     },
     "inference": {
-        "data": "dataset/data/",
-        "split": "dataset/split.npz",
-        "batch_size": 16,
+        "data": "/storage/adityak/chest_x_ray/",
+        "split_npz": "/storage/adityak/split.npz",
+        "batch_size": 1,
         "epochs": 5,
         "gpu": "True",
-        "model_file_name": "model_weights/cbis_a1_b1.model",
-        "lr": 1e-5,
-        "checkpoint": "model_weights/cbis_a1_b1.model",
-        "savepath": "model_weights/"
+        "gnn":"False",
+        "model_file": "/storage/adityak/wt_without_gnn/best_weight_0.65908386103622_19.pt",
+        "checkpoint": "/storage/adityak/wt_without_gnn/modeltry.pt",
+        "backbone":"resnet",
+        "max_samples":10
     },
     "export": {
-        "checkpoint": "model_weights/cbis_a1_b1.model",
+        "checkpoint": "/storage/adityak/wt_without_gnn/best_weight_0.65908386103622_19.pt",
+        "backbone":"resnet",
+        "split_path":"/storage/adityak/split.npz",
         "input_shape": [
             1,
             1,
-            1024,
-            1024
+            320,
+            320
         ],
-        "model_name_onnx": "cbis_a1_b1.onnx",
-        "model_name": "cbis_a1_b1",
-        "alpha": 1,
-        "beta": 1,
-        "phi": 1,
-        "phase": 1
+        "model_name_onnx": "modeltry.onnx",
+        "model_name": "modeltry"
     }
 }

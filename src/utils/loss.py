@@ -5,7 +5,7 @@ import numpy as np
 ############# Define the Weighted Loss. The weights are different for each class ########
 
 class Custom_Loss(nn.Module):
-    def __init__(self, site):
+    def __init__(self, site, device=torch.device('cpu')):
         super(Custom_Loss, self).__init__()
         
         if site==-999:

@@ -1,5 +1,7 @@
 import unittest
 import os
+import sys
+sys.path.append(r'/storage/adityak/federated/')
 from src.utils.downloader import download_checkpoint
 from src.utils.exporter import Exporter
 from src.utils.get_config import get_config
@@ -82,15 +84,11 @@ def create_export_test_without_gnn():
 
 
 
-
-
-class TestInference(create_export_test_with_gnn()):
-    'Test case with gnn'
-
-
 class TestInferenceEff(create_export_test_without_gnn()):
     'Test case with gnn'
 
+class TestInference(create_export_test_with_gnn()):
+    'Test case with gnn'
 
 if __name__ == '__main__':
     unittest.main()

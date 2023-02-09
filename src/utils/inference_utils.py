@@ -13,6 +13,7 @@ from openvino.inference_engine import IECore
 import torchvision.transforms as transforms
 from .misc import aggregate_local_weights
 import os
+import onnxruntime
 
 
 def to_numpy(tensor):
@@ -31,7 +32,8 @@ def inference(cnv_lyr, backbone_model, fc_layers, gnn_model, val_loader, criteri
     cnv_lyr.eval()
     backbone_model.eval() 
     fc_layers.eval()
-    gnn_model.eval()
+    if gnn_model is not None:
+        gnn_model.eval()
     
     with torch.no_grad():
         for count, sample in enumerate(val_loader):
@@ -143,21 +145,25 @@ def load_inference_model(config, run_type):
     return model
 def validate_model(model, config, run_type):
     # GPU transfer - Only pytorch models needs to be transfered.
+    max_samples = config['max_samples']
+    device = torch.device('cpu')
     if run_type == 'pytorch':
         if torch.cuda.is_available() and config['gpu'] == 'True':
+            device = torch.device('cuda')
             model = model.cuda()
-    data_test=construct_dataset(config['dataset'], config['split_npz'], -999, test_transform, tn_vl_idx=2)
+    data_test=construct_dataset(config['data'], config['split_npz'], -999, test_transform, tn_vl_idx=2)
     test_loader=DataLoader(data_test,batch_size=1, shuffle=False, num_workers=1, pin_memory=False)
     tot_loss=0
     tot_auc=0
     
     gt_lst=[]
     pred_lst=[]
-    criterion = Custom_Loss(-999)
-    
+    criterion = Custom_Loss(-999,device)
+
+    count = 0
     with torch.no_grad():
         for count, sample in enumerate(test_loader):
-            
+            count=count+1
             img=sample['img']
             gt=sample['gt']
             if torch.cuda.is_available() and config['gpu'] == 'True':
@@ -165,21 +171,23 @@ def validate_model(model, config, run_type):
                 gt = gt.cuda()
             if run_type == 'pytorch':
                 prd_final= model(img)  # forward through encoder
-                prd_final = prd_final.cpu().numpy()
-                gt = gt.cpu().numpy()
             elif run_type == 'onnx':
                 ort_inputs = {model.get_inputs()[0].name: to_numpy(img)}
                 prd_final = model.run(None, ort_inputs)
                 to_tensor = transforms.ToTensor()
                 prd_final = np.array(prd_final)
-                prd_final = np.squeeze(prd_final,axis=0)
-                prd_final = to_tensor(np.squeeze(prd_final,axis=0)).permute(1,2,0).unsqueeze(0)
+                # prd_final = np.squeeze(prd_final,axis=0)
+                prd_final = to_tensor(prd_final)#.unsqueeze(0)
+                prd_final = prd_final.squeeze(1).transpose(1,0)
+                gt = gt.cpu()
             else:
                 to_tensor = transforms.ToTensor()
-                prd_final = model.infer(inputs={'input': img})['output']
+                prd_final = model.infer(inputs={'input': img.cpu()})['output']
                 prd_final = np.array(prd_final)
-                prd_final = np.squeeze(prd_final,axis=0)
-                prd_final = to_tensor(np.squeeze(prd_final,axis=0)).unsqueeze(0)
+                # prd_final = np.squeeze(prd_final,axis=0)
+                prd_final = to_tensor(prd_final)#
+                prd_final = prd_final.squeeze(0)
+                gt=gt.cpu()
             loss=criterion(prd_final, gt)
             
             # Apply the sigmoid
@@ -192,6 +200,8 @@ def validate_model(model, config, run_type):
             tot_loss=tot_loss+loss.cpu().numpy()
            
             del loss, gt, prd_final
+            if count==max_samples:
+                break
             
     
     gt_lst=np.concatenate(gt_lst, axis=1)
